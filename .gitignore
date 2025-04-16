@@ -21,6 +21,4 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Archivos de pruebas
-coverage/
 

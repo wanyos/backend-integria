@@ -1,0 +1,23 @@
+# Ignorar archivos de entorno
+.env
+.env.*
+
+# Ignorar dependencias locales
+node_modules/
+
+# Ignorar archivos de logs
+*.log
+logs/
+
+# Ignorar archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Ignorar carpetas de compilación
+dist/
+build/
+coverage/
+
+# Ignorar Dockerfile y .dockerignore para evitar conflictos
+Dockerfile
+.dockerignore
