@@ -7,14 +7,16 @@
     "serve": "cross-env NODE_ENV=development node app.js",
     "connect-db": "cross-env NODE_ENV=development node db/mysql.js",
     "serve:start": "cross-env NODE_ENV=production node app.js",
-    "test": "cross-env NODE_ENV=test vitest"
+    "test": "cross-env NODE_ENV=test vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@azure/identity": "^4.8.0",
+    "@azure/identity": "^4.9.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -29,9 +31,12 @@
     "mysql2": "^3.14.0",
     "nodemailer": "^6.10.1",
     "odbc": "^2.4.9",
-    "zod": "^3.24.2"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "eslint": "^9.24.0",
+    "globals": "^16.0.0",
     "vitest": "^3.1.1"
   }
 }

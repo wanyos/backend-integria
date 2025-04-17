@@ -1,6 +1,5 @@
 import { pool } from '../../db/mysql.js'
 
-const users = 'SELECT * FROM tusuario limit 100'
 const allUsers =
   'SELECT *, REPLACE(REPLACE(nombre_real, "&#x20;", " "), "&amp;", "&") AS nombre_real_format FROM tusuario limit 100'
 
