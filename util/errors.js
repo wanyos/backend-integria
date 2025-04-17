@@ -1,48 +1,56 @@
-
-export class DatabaseError extends Error { 
-    constructor(message) { 
-        super(message)
-        this.name = 'DatabaseError'
-        this.status = 500
-    }
-}
-
-export class ValidationError extends Error { 
-    constructor(message) { 
-        super(message)
-        this.name = 'ValidationError'
-        this.status = 400
-    }
-}
-
-export class NotFoundError extends Error { 
-    constructor(message) { 
-        super(message)
-        this.name = 'NotFoundError'
-        this.status = 404
-    }
-}
-
-export class ErrorConnectDB extends Error { 
-    constructor(messsage) { 
-        super(messsage)
-        this.name = 'ErrorConnectDB'
-        this.status = 401
-    }
-}
-
-export class UnauthorizedError extends Error { 
-    constructor(message) { 
-        super(message)
-        this.name = 'UnathorizedError'
-        this.status = 401
-    }
-}
-
-export class InternalServerError extends Error {
-    constructor(message) {
-      super(message)
-      this.name = 'InternalServerError'
-      this.status = 500
-    }
+class CustomError extends Error {
+  constructor(message, name, status, originalError = null) {
+    super(message);
+    this.name = name;
+    this.status = status;
+    this.timestamp = new Date().toISOString();
+    this.originalError = originalError;
+    this.logError();
   }
+
+  logError() {
+    console.error(`\n[${this.name}] (${this.status}) - ${this.timestamp}`);
+    console.error(`Message: ${this.message}`);
+    if (this.originalError) {
+      console.error("Original error:", this.originalError);
+    }
+    // console.error("Stack trace:", this.stack.split("\n").slice(1).join("\n"));
+    console.error("-----------------------------------\n");
+  }
+}
+
+export class DatabaseError extends CustomError {
+  constructor(message, error) {
+    super(message, "DatabaseError", 500, error);
+  }
+}
+
+export class ValidationError extends CustomError {
+  constructor(message, error) {
+    super(message, "ValidationError", 400, error);
+  }
+}
+
+export class NotFoundError extends CustomError {
+  constructor(message, error) {
+    super(message, "NotFoundError", 404, error);
+  }
+}
+
+export class ErrorConnectDB extends CustomError {
+  constructor(messsage, error) {
+    super(messsage, "ErrorConnectDB", 401, error);
+  }
+}
+
+export class UnauthorizedError extends CustomError {
+  constructor(message, error) {
+    super(message, "UnathorizedError", 401, error);
+  }
+}
+
+export class InternalServerError extends CustomError {
+  constructor(message, error) {
+    super(message, "InternalServerError", 500, error);
+  }
+}

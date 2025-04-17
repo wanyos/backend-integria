@@ -1,68 +1,87 @@
-import { pool } from '../../db/mysql.js'
-import QUERIES from './sqlQueries.js'
-import { decodeHtmlEntities } from '../../util/formattingText.js'
-import { DatabaseError } from '../../util/errors.js'
+import { pool } from "../../db/mysql.js";
+import QUERIES from "./sqlQueries.js";
+import { decodeHtmlEntities } from "../../util/formattingText.js";
+import { DatabaseError } from "../../util/errors.js";
 
 export default class IncidentsService {
   static async getIncidents() {
     try {
-      const [rows] = await pool.query(QUERIES.getTenIncidents)
-      return { status: 200, incidents: rows }
+      const [rows] = await pool.query(QUERIES.getTenIncidents);
+      return { status: 200, incidents: rows };
     } catch (error) {
-      console.error('Database error getIncidents:', error.message)
-      throw new DatabaseError('Failed to getIncidents')
+      throw new DatabaseError("Failed to query mysql: getIncidents()", error);
     }
   }
 
   // total incidencias de cada año gestionadas hasta el 2015, comienza en el ultimo año
   static async getTotalIncYears(lastYear) {
     try {
-      let summary = []
-      let initYear = 2015
+      let summary = [];
+      let initYear = 2015;
       while (initYear <= lastYear) {
-        const startDate = `${initYear - 1}-12-31`
-        const endDate = `${initYear + 1}-01-01`
-        const [result] = await pool.query(QUERIES.openIncidents, [startDate, endDate])
-        summary.push({ year: initYear, count: result[0]?.count || 0 })
-        initYear++
+        const startDate = `${initYear - 1}-12-31`;
+        const endDate = `${initYear + 1}-01-01`;
+        const [result] = await pool.query(QUERIES.openIncidents, [
+          startDate,
+          endDate,
+        ]);
+        summary.push({ year: initYear, count: result[0]?.count || 0 });
+        initYear++;
       }
-      return { status: 200, incidents: summary }
+      return { status: 200, incidents: summary };
     } catch (error) {
-      console.error('Database error getTotalIncYears:', error.message)
-      throw new DatabaseError('Failed to fetch inventory from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getTotalIncYears()",
+        error
+      );
     }
   }
 
   // incidencias por rango de fechas, año en curso y mismo rango año anterior. Cantidad de ellas
   static async getIncidentsRange(startDate, endDate) {
     try {
-      const startDateLastYear = new Date(startDate)
-      startDateLastYear.setFullYear(startDateLastYear.getFullYear() - 1)
+      const startDateLastYear = new Date(startDate);
+      startDateLastYear.setFullYear(startDateLastYear.getFullYear() - 1);
 
-      const endDateLastYear = new Date(endDate)
-      endDateLastYear.setFullYear(endDateLastYear.getFullYear() - 1)
+      const endDateLastYear = new Date(endDate);
+      endDateLastYear.setFullYear(endDateLastYear.getFullYear() - 1);
 
-      const startLastYear = startDateLastYear.toISOString().split('T')[0]
-      const endLastYear = endDateLastYear.toISOString().split('T')[0]
+      const startLastYear = startDateLastYear.toISOString().split("T")[0];
+      const endLastYear = endDateLastYear.toISOString().split("T")[0];
 
-      const [openInc] = await pool.query(QUERIES.openIncidents, [startDate, endDate])
-      const [closeInc] = await pool.query(QUERIES.closeIncidents, [startDate, endDate])
-      const [pendingInc] = await pool.query(QUERIES.pendingIncidents, [startDate, endDate])
-      const [avgInc] = await pool.query(QUERIES.avgIncidents, [startDate, endDate])
+      const [openInc] = await pool.query(QUERIES.openIncidents, [
+        startDate,
+        endDate,
+      ]);
+      const [closeInc] = await pool.query(QUERIES.closeIncidents, [
+        startDate,
+        endDate,
+      ]);
+      const [pendingInc] = await pool.query(QUERIES.pendingIncidents, [
+        startDate,
+        endDate,
+      ]);
+      const [avgInc] = await pool.query(QUERIES.avgIncidents, [
+        startDate,
+        endDate,
+      ]);
 
       const [openIncLastYear] = await pool.query(QUERIES.openIncidents, [
         startLastYear,
         endLastYear,
-      ])
+      ]);
       const [closeIncLastYear] = await pool.query(QUERIES.closeIncidents, [
         startLastYear,
         endLastYear,
-      ])
+      ]);
       const [pendingIncLastYear] = await pool.query(QUERIES.pendingIncidents, [
         startLastYear,
         endLastYear,
-      ])
-      const [avgIncLastYear] = await pool.query(QUERIES.avgIncidents, [startLastYear, endLastYear])
+      ]);
+      const [avgIncLastYear] = await pool.query(QUERIES.avgIncidents, [
+        startLastYear,
+        endLastYear,
+      ]);
 
       const incidentsSummary = {
         current: {
@@ -83,60 +102,76 @@ export default class IncidentsService {
             minute: avgIncLastYear[0]?.minutos || 0,
           },
         },
-      }
+      };
 
-      return { status: 200, incidents: incidentsSummary }
+      return { status: 200, incidents: incidentsSummary };
     } catch (error) {
-      console.error('Database error getIncidentsRange:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getIncidentsRange()",
+        error
+      );
     }
   }
 
   // todas las incidencias de un año, abiertas y cerradas. Cantidad de ellas por cada dia del año
   static async getIncidentsYear(currentYear) {
     try {
-      const [openInc] = await pool.query(QUERIES.allIncidentsYearOpen, [currentYear])
-      const [closeInc] = await pool.query(QUERIES.allIncidentsYearClose, [currentYear])
+      const [openInc] = await pool.query(QUERIES.allIncidentsYearOpen, [
+        currentYear,
+      ]);
+      const [closeInc] = await pool.query(QUERIES.allIncidentsYearClose, [
+        currentYear,
+      ]);
       const incidentsSummary = {
         openInc: [],
         closeInc: [],
-      }
+      };
 
       // Procesa las incidencias abiertas
       openInc.forEach((incident) => {
-        const { date, count } = incident
-        incidentsSummary.openInc.push({ date, count })
-      })
+        const { date, count } = incident;
+        incidentsSummary.openInc.push({ date, count });
+      });
 
       // Procesa las incidencias cerradas
       closeInc.forEach((incident) => {
-        const { date, count } = incident
-        incidentsSummary.closeInc.push({ date, count })
-      })
+        const { date, count } = incident;
+        incidentsSummary.closeInc.push({ date, count });
+      });
 
-      return { status: 200, incidents: incidentsSummary }
+      return { status: 200, incidents: incidentsSummary };
     } catch (error) {
-      console.error('Database error getIncidentsYear:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getIncidentsYear()",
+        error
+      );
     }
   }
 
   // incidencias abiertas por cada grupo de cualquier fecha
   static async getOpenIncidentsGroup() {
     try {
-      const [rows] = await pool.query(QUERIES.openIncidentsGr)
-      return { status: 200, incidents: rows }
+      const [rows] = await pool.query(QUERIES.openIncidentsGr);
+      return { status: 200, incidents: rows };
     } catch (error) {
-      console.error('Database error getOpenIncidentsGroup:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getOpenIncidentsGroup()",
+        error
+      );
     }
   }
 
   // incidencias abiertas / cerradas por rango de fechas y grupo, solo cantidades
   static async getAllIncidentsGroup(startDate, endDate) {
     try {
-      const [openByGroup] = await pool.query(QUERIES.allIncOpenByGroup, [startDate, endDate])
-      const [closeByGroup] = await pool.query(QUERIES.allIncCloseByGroup, [startDate, endDate])
+      const [openByGroup] = await pool.query(QUERIES.allIncOpenByGroup, [
+        startDate,
+        endDate,
+      ]);
+      const [closeByGroup] = await pool.query(QUERIES.allIncCloseByGroup, [
+        startDate,
+        endDate,
+      ]);
       const incidentsSummary = {
         open: {
           operadores: 0,
@@ -156,43 +191,48 @@ export default class IncidentsService {
           negocio: 0,
           externo: 0,
         },
-      }
+      };
 
       const groupMapping = {
-        Operadores: 'operadores',
-        Tecnicos: 'tecnicos',
-        Administradores: 'administradores',
-        Ciberseguridad: 'ciberseguridad',
-        'Apl.Horizontales': 'horizontales',
-        'Apl.Negocio': 'negocio',
-        'Tec.Externo': 'externo',
-      }
+        Operadores: "operadores",
+        Tecnicos: "tecnicos",
+        Administradores: "administradores",
+        Ciberseguridad: "ciberseguridad",
+        "Apl.Horizontales": "horizontales",
+        "Apl.Negocio": "negocio",
+        "Tec.Externo": "externo",
+      };
 
       openByGroup.forEach((row) => {
-        const groupKey = groupMapping[row.grupo]
+        const groupKey = groupMapping[row.grupo];
         if (groupKey) {
-          incidentsSummary.open[groupKey] = row.count
+          incidentsSummary.open[groupKey] = row.count;
         }
-      })
+      });
 
       closeByGroup.forEach((row) => {
-        const groupKey = groupMapping[row.grupo]
+        const groupKey = groupMapping[row.grupo];
         if (groupKey) {
-          incidentsSummary.close[groupKey] = row.count
+          incidentsSummary.close[groupKey] = row.count;
         }
-      })
+      });
 
-      return { status: 200, incidents: incidentsSummary }
+      return { status: 200, incidents: incidentsSummary };
     } catch (error) {
-      console.error('Database error getAllIncidentsGroup:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncidentsGroup()",
+        error
+      );
     }
   }
 
   // incidencias abiertas en rango de fechas por localizacion, cantidad de cada localización
   static async getAllIncLocationRange(startDate, endDate) {
     try {
-      const [results] = await pool.query(QUERIES.allIncLocationRange, [startDate, endDate])
+      const [results] = await pool.query(QUERIES.allIncLocationRange, [
+        startDate,
+        endDate,
+      ]);
 
       const incidentsSummary = {
         pacifico: results[0]?.pacifico || 0,
@@ -201,19 +241,24 @@ export default class IncidentsService {
         carabanchel: results[0]?.carabanchel || 0,
         entrevias: results[0]?.entrevias || 0,
         sanchinarro: results[0]?.sanchinarro || 0,
-      }
+      };
 
-      return { status: 200, incidents: incidentsSummary }
+      return { status: 200, incidents: incidentsSummary };
     } catch (error) {
-      console.error('Database error getAllIncLocationRange:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncLocationRange()",
+        error
+      );
     }
   }
 
   // incidencias abiertas en rango de fechas por bases, cantidad de cada base
   static async getAllIncBasesRange(startDate, endDate) {
     try {
-      const [results] = await pool.query(QUERIES.allIncBasesRange, [startDate, endDate])
+      const [results] = await pool.query(QUERIES.allIncBasesRange, [
+        startDate,
+        endDate,
+      ]);
 
       const incidentsSummary = {
         colon: results[0]?.Colon || 0,
@@ -223,19 +268,24 @@ export default class IncidentsService {
         recuerdo: results[0]?.Recuerdo || 0,
         imperial: results[0]?.Imperial || 0,
         vicalvaro: results[0]?.Vicalvaro || 0,
-      }
+      };
 
-      return { status: 200, incidents: incidentsSummary }
+      return { status: 200, incidents: incidentsSummary };
     } catch (error) {
-      console.error('Database error getAllIncBasesRange:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncBasesRange()",
+        error
+      );
     }
   }
 
   // incidencias abiertas en rango de fechas por aparcamientos, cantidad de ellas
   static async getAllIncParkingRange(startDate, endDate) {
     try {
-      const [results] = await pool.query(QUERIES.allIncParkingRange, [startDate, endDate])
+      const [results] = await pool.query(QUERIES.allIncParkingRange, [
+        startDate,
+        endDate,
+      ]);
 
       const incidentsSummary = {
         almagro: results[0]?.Almagro || 0,
@@ -256,57 +306,74 @@ export default class IncidentsService {
         olavide: results[0]?.Olavide || 0,
         metropolitano: results[0]?.Metropolitano || 0,
         fuenteMora: results[0]?.FuenteMora || 0,
-      }
+      };
 
-      return { status: 200, incidents: incidentsSummary }
+      return { status: 200, incidents: incidentsSummary };
     } catch (error) {
-      console.error('Database error getAllIncParkingRange:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncParkingRange()",
+        error
+      );
     }
   }
 
   // incidencias totales por horas del dia, rango de fechas
   static async getAllIncByHours(startDate, endDate) {
     try {
-      const [results] = await pool.query(QUERIES.allIncHours, [startDate, endDate])
-      return { status: 200, incidents: results }
+      const [results] = await pool.query(QUERIES.allIncHours, [
+        startDate,
+        endDate,
+      ]);
+      return { status: 200, incidents: results };
     } catch (error) {
-      console.error('Database error getAllIncByHours:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncByHours()",
+        error
+      );
     }
   }
 
   // incidencias totales por dias, rango de fechas
   static async getAllIncByWeekdays(startDate, endDate) {
     try {
-      const [results] = await pool.query(QUERIES.allIncWeekDay, [startDate, endDate])
-      return { status: 200, incidents: results }
+      const [results] = await pool.query(QUERIES.allIncWeekDay, [
+        startDate,
+        endDate,
+      ]);
+      return { status: 200, incidents: results };
     } catch (error) {
-      console.error('Database error getAllIncByWeekdays:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncByWeekdays()",
+        error
+      );
     }
   }
 
   // cantidad por meses desde el 2015
   static async getAllIncByMonths() {
     try {
-      const [results] = await pool.query(QUERIES.allIncByMonths)
-      return { status: 200, incidents: results }
+      const [results] = await pool.query(QUERIES.allIncByMonths);
+      return { status: 200, incidents: results };
     } catch (error) {
-      console.error('Database error getAllIncByMonths:', error)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIncByMonths()",
+        error
+      );
     }
   }
 
   static async getAllExternalResolutor(startDate, endDate) {
     try {
-      const [results] = await pool.query(QUERIES.allExternalResolutor, [startDate, endDate]);
+      const [results] = await pool.query(QUERIES.allExternalResolutor, [
+        startDate,
+        endDate,
+      ]);
       const formatIncidentData = (incident) => ({
         ...incident,
         titulo: decodeHtmlEntities(incident.titulo),
         descripcion: decodeHtmlEntities(incident.descripcion),
         resolutor: decodeHtmlEntities(incident.resolutor),
-        cierre: incident.cierre === '0000-00-00' ? null : incident.cierre,
+        cierre: incident.cierre === "0000-00-00" ? null : incident.cierre,
       });
 
       // Crear un array de objetos con id, resolutor y incidents
@@ -331,50 +398,57 @@ export default class IncidentsService {
 
       return { status: 200, incidents: groupedIncidents };
     } catch (error) {
-      console.error('Database error getAllExternalResolutor:', error);
-      throw new DatabaseError('Failed to fetch incidents from the database');
+      throw new DatabaseError(
+        "Failed to query mysql: getAllExternalResolutor()",
+        error
+      );
     }
   }
 
   static async getAllIntegriaTechnology(startDate, endDate) {
     try {
-      const [incIntegriaTec] = await pool.query(QUERIES.allIncTechnology, [startDate, endDate])
+      const [incIntegriaTec] = await pool.query(QUERIES.allIncTechnology, [
+        startDate,
+        endDate,
+      ]);
 
       const transformedData = incIntegriaTec.map((row) => {
-        row.Usuario = decodeHtmlEntities(row.Usuario)
-        row.Resumen = decodeHtmlEntities(row.Resumen)
-        row.Grupo = decodeHtmlEntities(row.Grupo)
-        row.Tecnico_Asignado = decodeHtmlEntities(row.Tecnico_Asignado)
-        row.Descripcion_Tipo = decodeHtmlEntities(row.Descripcion_Tipo)
-        row.Localizacion = decodeHtmlEntities(row.Localizacion)
-        return row
-      })
+        row.Usuario = decodeHtmlEntities(row.Usuario);
+        row.Resumen = decodeHtmlEntities(row.Resumen);
+        row.Grupo = decodeHtmlEntities(row.Grupo);
+        row.Tecnico_Asignado = decodeHtmlEntities(row.Tecnico_Asignado);
+        row.Descripcion_Tipo = decodeHtmlEntities(row.Descripcion_Tipo);
+        row.Localizacion = decodeHtmlEntities(row.Localizacion);
+        return row;
+      });
 
       // separar las incidencias entre movilidad y tecnologia
-      const movilidad = []
-      const tecnologia = []
+      const movilidad = [];
+      const tecnologia = [];
 
       const dataIntegria = {
-        apliMovilidadd: '6.02 APLIC MOVILIDAD',
-        etralux: 'MOV ETRALUX',
-        siepark: 'MOV SIEPARK',
-      }
+        apliMovilidadd: "6.02 APLIC MOVILIDAD",
+        etralux: "MOV ETRALUX",
+        siepark: "MOV SIEPARK",
+      };
 
       transformedData.forEach((item) => {
         if (item.Grupo) {
-          const grupoNormalizado = item.Grupo.trim().toLowerCase()
+          const grupoNormalizado = item.Grupo.trim().toLowerCase();
           const isMovilidad = Object.keys(dataIntegria).some(
-            (key) => dataIntegria[key].trim().toLowerCase() === grupoNormalizado,
-          )
-          isMovilidad ? movilidad.push(item) : tecnologia.push(item)
+            (key) => dataIntegria[key].trim().toLowerCase() === grupoNormalizado
+          );
+          isMovilidad ? movilidad.push(item) : tecnologia.push(item);
         }
-      })
+      });
 
-      const integriaInc = { movilidad, tecnologia }
-      return { status: 200, incidents: integriaInc }
+      const integriaInc = { movilidad, tecnologia };
+      return { status: 200, incidents: integriaInc };
     } catch (error) {
-      console.error('Database error getAllIntegriaTechnology:', error.message)
-      throw new DatabaseError('Failed to fetch incidents from the database')
+      throw new DatabaseError(
+        "Failed to query mysql: getAllIntegriaTechnology()",
+        error
+      );
     }
   }
 }

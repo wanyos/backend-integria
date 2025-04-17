@@ -1,16 +1,17 @@
-import dotenv from 'dotenv'
-import mysql from 'mysql2/promise'
-import { fileURLToPath } from 'url'
-import path from 'path'
+import dotenv from "dotenv";
+import mysql from "mysql2/promise";
+import { fileURLToPath } from "url";
+import path from "path";
+import { ErrorConnectDB } from "../util/errors";
 
 // Obtener la ruta del directorio actual usando `import.meta.url`
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Dynamically build the path to the .env.development file
-const envFile = `../.env.${process.env.NODE_ENV || 'development'}`
-const envPath = path.resolve(__dirname, envFile)  // ruta absoluta al archivo .env
-dotenv.config({ path: envPath })
+const envFile = `../.env.${process.env.NODE_ENV || "development"}`;
+const envPath = path.resolve(__dirname, envFile); // ruta absoluta al archivo .env
+dotenv.config({ path: envPath });
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -25,30 +26,37 @@ const pool = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-})
+});
 
 // Función para verificar la conexión
 const checkConnection = async () => {
   try {
-    const connection = await pool.getConnection()
-    console.log('Database connection is active')
-    connection.release()
+    const connection = await pool.getConnection();
+    console.log("Database connection is active");
+    connection.release();
   } catch (error) {
-    console.error('Error checking database connection:', error)
+    throw new ErrorConnectDB(
+      "Error connection mysql database: checkConnection()",
+      error
+    );
   }
-}
+};
 
 // setInterval(checkConnection, 5 * 60 * 1000)
-checkConnection()
+checkConnection();
 
 export const closePool = async () => {
   try {
-    await pool.end()
-    console.log('Database pool closed')
+    await pool.end();
+    console.log("Database pool closed");
   } catch (error) {
-    console.error('Error closing database pool:', error)
+    console.error(":", error);
+    throw new ErrorConnectDB(
+      "Error closing mysql database pool: closePool()",
+      error
+    );
   }
-}
+};
 
 // export const getAll = async (table) => {
 //   try {
@@ -60,4 +68,4 @@ export const closePool = async () => {
 //   }
 // }
 
-export { pool }
+export { pool };

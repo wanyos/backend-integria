@@ -74,6 +74,7 @@ import sql from "mssql";
 import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ErrorConnectDB } from "../util/errors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,10 +110,9 @@ export async function getServideskData() {
     const result = await pool.request().query(query3);
     return result.recordset;
   } catch (err) {
-    console.log("");
-    console.error("Error en la consulta ODBC:", err.message);
-    throw new Error(
-      "Error retrieving data from Servidesk.Possible database connection failure..."
+    throw new ErrorConnectDB(
+      "Error database sql server: getServideskData()",
+      err
     );
   } finally {
     if (pool) {
