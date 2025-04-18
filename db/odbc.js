@@ -74,7 +74,7 @@ import sql from "mssql";
 import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ErrorConnectDB } from "../util/errors";
+import { ErrorConnectDB } from "../util/errors.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,7 +105,8 @@ export async function getServideskData() {
   let pool;
 
   try {
-    pool = sql.connect(config);
+    pool = await sql.connect(config);
+
     console.log("Database servidesk connection is active...");
     const result = await pool.request().query(query3);
     return result.recordset;

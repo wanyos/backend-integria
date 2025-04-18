@@ -12,7 +12,7 @@ class CustomError extends Error {
     console.error(`\n[${this.name}] (${this.status}) - ${this.timestamp}`);
     console.error(`Message: ${this.message}`);
     if (this.originalError) {
-      console.error("Original error:", this.originalError);
+      console.error("Original error:", this.originalError.message);
     }
     // console.error("Stack trace:", this.stack.split("\n").slice(1).join("\n"));
     console.error("-----------------------------------\n");

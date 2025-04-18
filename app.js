@@ -66,7 +66,7 @@ app.use("/api/incidents", authMiddleware, incidentsRouter);
 app.use("/api/inventory", authMiddleware, inventoryRouter);
 
 app.post("/send-gmail", async (req, res) => {
-  const { email, title, comment, incidents } = req.body;
+  const { email, cc, cco, title, comment, incidents } = req.body;
   if (!incidents) {
     return res.status(400).send("No incidents data provided.");
   }
@@ -75,6 +75,8 @@ app.post("/send-gmail", async (req, res) => {
 
   const options = {
     to: email,
+    cc: cc,
+    bcc: cco,
     subject: title,
     text: comment,
     fileName: "export.xlsx",

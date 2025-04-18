@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import mysql from "mysql2/promise";
 import { fileURLToPath } from "url";
 import path from "path";
-import { ErrorConnectDB } from "../util/errors";
+import { ErrorConnectDB } from "../util/errors.js";
 
 // Obtener la ruta del directorio actual usando `import.meta.url`
 const __filename = fileURLToPath(import.meta.url);

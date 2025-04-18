@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { UnauthorizedError } from "./util/errors";
+import { UnauthorizedError } from "./util/errors.js";
 
 export const authMiddleware = (req, res, next) => {
   const token = req.headers["authorization"]?.split(" ")[1];
