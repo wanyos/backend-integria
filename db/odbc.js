@@ -83,11 +83,12 @@ const envPath = path.resolve(__dirname, envFile);
 dotenv.config({ path: envPath });
 
 const config = {
-  server: process.env.DB_HOST_SQL_SERVER, // Dirección IP de la base de datos moncau2
+  server: process.env.DB_HOST_SQL_SERVER, 
   database: process.env.DB_DATABASE_SQL_SERVER,
   user: process.env.DB_USER_SQL_SERVER,
   password: process.env.DB_PASSWORD_SQL_SERVER,
-  port: process.env.DB_PORT_SQL_SERVER,
+  port: parseInt(process.env.DB_PORT_SQL_SERVER),
+
   options: {
     encrypt: false,
     trustServerCertificate: true,
