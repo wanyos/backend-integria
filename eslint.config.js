@@ -18,6 +18,5 @@ export default defineConfig([
       "no-undef": "warn",
       "no-multiple-empty-lines": ["error", { max: 1 }],
     },
-  }
-  
+  },
 ]);

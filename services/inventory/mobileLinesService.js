@@ -2,6 +2,7 @@ import { pool } from "../../db/mysql.js";
 import { DatabaseError } from "../../util/errors.js";
 import QUERIES from "./sqlInventory.js";
 import { OBJECT_TYPE } from "./constants.js";
+import { decodeHtmlEntities } from "../../util/formattingText.js";
 
 const STATUS = {
   new: "new",
@@ -18,7 +19,10 @@ export default class MobileLineService {
       const totalLines = result[0]?.total || 0;
       return { status: 200, totalMobileNewLines: totalLines };
     } catch (error) {
-      throw new DatabaseError("Failed to query mysql: getMobileLines()", error);
+      throw new DatabaseError(
+        "Failed to query mysql: getMobileNewLinesCount()",
+        error
+      );
     }
   }
 
@@ -31,21 +35,34 @@ export default class MobileLineService {
       const totalLines = result[0]?.total || 0;
       return { status: 200, totalMobileInuseLines: totalLines };
     } catch (error) {
-      throw new DatabaseError("Failed to query mysql: getMobileLines()", error);
+      throw new DatabaseError(
+        "Failed to query mysql: getMobileInuseLinesCount()",
+        error
+      );
     }
   }
 
   static async getMobileErrorStatusLinesCount() {
     try {
-      const [result] = await pool.query(QUERIES.allErrorStatusLinesCount, [
+      const [result] = await pool.query(QUERIES.allErrorStatusLines, [
         OBJECT_TYPE.mobileLine,
         STATUS.inuse,
         STATUS.new,
       ]);
-      const totalLines = result[0]?.total || 0;
+
+      const totalLines = result.map((line) => {
+        return {
+          ...line,
+          description: decodeHtmlEntities(line.description),
+        };
+      });
+
       return { status: 200, totalMobileErrorStatusLines: totalLines };
     } catch (error) {
-      throw new DatabaseError("Failed to query mysql: getMobileLines()", error);
+      throw new DatabaseError(
+        "Failed to query mysql: getMobileErrorStatusLinesCount()",
+        error
+      );
     }
   }
 }
