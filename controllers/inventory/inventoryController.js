@@ -12,6 +12,16 @@ export default class InventoryController {
     }
   }
 
+  static async getLinesByStatus(req, res, next) {
+    try {
+      const { status, linesByStatus } =
+        await MobileLineService.getLinesGroupedByStatus();
+      return res.status(status).json(linesByStatus);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getMobileNewLinesCount(req, res, next) {
     try {
       const { status, totalMobileNewLines } =

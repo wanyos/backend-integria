@@ -5,6 +5,11 @@ import InventoryController from "../controllers/inventory/inventoryController.js
 const invnetoryRouter = express.Router();
 
 invnetoryRouter.get(
+  "/mobile-lines/bystatus",
+  InventoryController.getLinesByStatus
+);
+
+invnetoryRouter.get(
   "/mobile-lines/count",
   InventoryController.getMobileLinesCount
 );

@@ -16,6 +16,21 @@ const QUERIES = {
       from tinventory where id_object_type=? and status not in (?,?);
   `,
 
+  allLinesGroupedByStatus: `
+    SELECT 
+      COALESCE(NULLIF(TRIM(status), ''), 'undefined') AS status,
+      id,
+      owner,
+      name,
+      description,
+      DATE_FORMAT(last_update, '%d-%m-%Y') AS last_update,
+      DATE_FORMAT(receipt_date, '%d-%m-%Y') AS receipt_date,
+      DATE_FORMAT(issue_date, '%d-%m-%Y') AS issue_date
+    FROM tinventory
+    WHERE id_object_type = ?
+    ORDER BY status, id;
+  `,
+
   // usuarios que tienen mas de una linea movil
   linesByEmployee: `
 SELECT id, owner, name, description, 

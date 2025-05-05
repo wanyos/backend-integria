@@ -10,6 +10,28 @@ const STATUS = {
 };
 
 export default class MobileLineService {
+  static async getLinesGroupedByStatus() {
+    try {
+      const [result] = await pool.query(QUERIES.allLinesGroupedByStatus, [
+        OBJECT_TYPE.mobileLine,
+      ]);
+
+      const totalLines = result.map((line) => {
+        return {
+          ...line,
+          description: decodeHtmlEntities(line.description),
+        };
+      });
+
+      return { status: 200, linesByStatus: totalLines };
+    } catch (error) {
+      throw new DatabaseError(
+        "Failed to query mysql: getLinesGroupedByStatus()",
+        error
+      );
+    }
+  }
+
   static async getMobileNewLinesCount() {
     try {
       const [result] = await pool.query(QUERIES.allStatusLinesCount, [
