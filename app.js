@@ -12,9 +12,13 @@ import loginRouter from "./routers/loginRoutes.js";
 import { globalMiddleware, authMiddleware } from "./middelware.js";
 import { sendGmail } from "./email-config/gmail-config.js";
 import { convertJsonToExcel } from "./email-config/conver_excel.js";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import fs from "node:fs";
 
 const app = express();
 app.disable("x-powered-by");
+const execFileAsync = promisify(execFile);
 
 // Setting to get the current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -65,32 +69,100 @@ app.use("/api/users", authMiddleware, usersRouter);
 app.use("/api/incidents", authMiddleware, incidentsRouter);
 app.use("/api/inventory", authMiddleware, inventoryRouter);
 
-app.post("/send-gmail", async (req, res) => {
+app.post("/send-outlook", async (req, res) => {
   const { email, cc, cco, title, comment, incidents } = req.body;
+
   if (!incidents) {
     return res.status(400).send("No incidents data provided.");
   }
 
-  const excel = await convertJsonToExcel(incidents);
-
-  const options = {
-    to: email,
-    cc: cc,
-    bcc: cco,
-    subject: title,
-    text: comment,
-    fileName: "export.xlsx",
-    fileData: excel,
-  };
-
   try {
-    const result = await sendGmail(options);
+    const excel = await convertJsonToExcel(incidents);
+    const fileName = "incidencias.xlsx";
+
+    // Ruta al script y carpeta temporal
+    const scriptPath = path.join(__dirname, "email-config", "cau_email.ps1");
+    const tempDir = path.join(__dirname, "email-config", "temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const filePath = path.join(tempDir, fileName);
+    fs.writeFileSync(filePath, excel);
+
+    const to = email.split(",").join(";");
+    const ccFormatted = cc.split(",").join(";");
+    const bcc = cco.split(",").join(";");
+
+    // Construir argumentos para PowerShell
+    const args = [
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      scriptPath,
+      "-To",
+      to,
+      "-Cc",
+      ccFormatted || "",
+      "-Bcc",
+      bcc || "cau@emtmadrid.es",
+      "-Asunto",
+      title || "Informe automático",
+      "-Cuerpo",
+      comment || "Adjuntamos el informe semanal.",
+      "-Adjunto",
+      filePath,
+    ];
+
+    // Ejecutar script PowerShell
+    const { stdout, stderr } = await execFileAsync("powershell.exe", args);
+
+    // Borrar el archivo temporal
+    fs.unlinkSync(filePath);
+
+    if (stderr) {
+      console.error("❌ PowerShell stderr:", stderr);
+    }
+
+    const result = {
+      success: true,
+      message: "Email enviado correctamente",
+      to: to,
+      cc: cc,
+      bcc: bcc,
+    };
+
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error en /send-email:", error);
+    console.error("❌ Error al enviar correo con Outlook:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// app.post("/send-gmail", async (req, res) => {
+//   const { email, cc, cco, title, comment, incidents } = req.body;
+//   if (!incidents) {
+//     return res.status(400).send("No incidents data provided.");
+//   }
+
+//   const excel = await convertJsonToExcel(incidents);
+
+//   const options = {
+//     to: email,
+//     cc: cc,
+//     bcc: cco,
+//     subject: title,
+//     text: comment,
+//     fileName: "export.xlsx",
+//     fileData: excel,
+//   };
+
+//   try {
+//     const result = await sendGmail(options);
+//     res.status(200).json(result);
+//   } catch (error) {
+//     console.error("Error en /send-email:", error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// });
 
 app.use(globalMiddleware);
 
