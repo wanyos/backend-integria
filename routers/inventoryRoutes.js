@@ -4,6 +4,10 @@ import InventoryController from "../controllers/inventory/inventoryController.js
 
 const invnetoryRouter = express.Router();
 
+invnetoryRouter.get(
+  "/mobile-lines/compare-telefonica",
+  InventoryController.getCompareByTelefonica
+);
 
 invnetoryRouter.get(
   "/mobile-lines/byemployee",
@@ -14,7 +18,6 @@ invnetoryRouter.get(
   "/mobile-lines/bystatus",
   InventoryController.getLinesByStatus
 );
-
 
 // invnetoryRouter.get(
 //   "/mobile-newlines/count",

@@ -45,6 +45,19 @@ class ManageDirectory {
     }
     return `Directory is not exist...`;
   }
+
+  saveDataFile(data) {
+    try {
+      const dir = this.getDirectory();
+      if (fs.existsSync(dir)) {
+        const pathFile = path.join(dir, "data_lines.json");
+        fs.writeFileSync(pathFile, JSON.stringify(data, null, 2));
+      }
+      return { success: true };
+    } catch (error) {
+      throw new Error("Error file write in saveDataFile", error.message);
+    }
+  }
 }
 
 class MobileLines {
@@ -232,24 +245,27 @@ class ManageExcel {
 
     const rows = [];
     worksheet.eachRow((row, rowNumber) => {
-      const rowData = {
-        telefono: row.values[2],
-        extension: row.values[3],
-        perfil: row.values[4],
-        estado: row.values[6],
-        icc: row.values[7],
-        puk: row.values[8],
-        nivel: row.values[12],
-      };
-      rows.push(rowData);
+      if (rowNumber > 1) {
+        const rowData = {
+          telefono: row.values[2],
+          extension: row.values[3],
+          perfil: row.values[4],
+          estado: row.values[6],
+          icc: row.values[7],
+          puk: row.values[8],
+          nivel: row.values[12],
+        };
+        rows.push(rowData);
+      }
     });
-    console.log(
-      "Time and Date: ",
-      new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid" })
-    );
-    console.log(`Processed ${rows.length} rows from Excel file`);
+    const reportDate = new Date().toLocaleString("es-ES", {
+      timeZone: "Europe/Madrid",
+    });
+
+    // console.log('Report date: ', reportDate)
+    // console.log(`Processed ${rows.length} rows from Excel file`);
     // console.log("data", rows);
-    return rows;
+    return { date: reportDate, report: rows };
   }
 }
 
@@ -280,7 +296,10 @@ const setDirectory = async () => {
 
   const readExcel = new ManageExcel(excel);
   const excelData = await readExcel.readExcel();
-  console.log(`Extracted ${excelData.length} records`);
+
+  const createFile = create.saveDataFile(excelData);
+  console.log("data file", createFile);
+  // console.log(`Extracted ${excelData.length} records`);
 };
 
 setDirectory();
