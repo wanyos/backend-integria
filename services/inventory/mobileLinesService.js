@@ -48,10 +48,7 @@ export default class MobileLineService {
         "../../contextos/data/data_lines.json"
       );
       if (!fs.existsSync(pathFile))
-        throw new DatabaseError(
-          "Failed service getCompareByTelefonica()",
-          error
-        );
+        throw new DatabaseError("Failed service getCompareByTelefonica()");
 
       const dataFile = JSON.parse(fs.readFileSync(pathFile, "utf-8"));
       const dateReport = dataFile.date;
