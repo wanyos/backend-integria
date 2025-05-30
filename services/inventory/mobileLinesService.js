@@ -45,7 +45,7 @@ export default class MobileLineService {
     try {
       const pathFile = path.join(
         __dirname,
-        "../../contextos/data/data_lines.json"
+        "../../contextos/download/data_lines.json"
       );
       if (!fs.existsSync(pathFile))
         throw new DatabaseError("Failed service getCompareByTelefonica()");
@@ -61,10 +61,17 @@ export default class MobileLineService {
         return {
           ...line,
           description: decodeHtmlEntities(line.description),
+          perfil: decodeHtmlEntities(line.perfil),
         };
       });
 
-      const reportLines = compareLines(DBLines, linesTelefonica);
+      const { nuevas, discrepancias } = compareLines(DBLines, linesTelefonica);
+      const reportLines = {
+        reportTelefonica: dateReport,
+        nuevas,
+        discrepancias,
+      };
+      return { status: 200, linesByTelefonica: reportLines };
     } catch (error) {
       throw new DatabaseError(
         "Failed to query mysql: getCompareByTelefonica()",
@@ -75,10 +82,47 @@ export default class MobileLineService {
 }
 
 const compareLines = (DBLines, telefonicaLines) => {
-  const discrepancies = [];
+  const nuevas = [];
+  const discrepancias = [];
+
   telefonicaLines.forEach((lineTelefonica) => {
-    const dbLine = DBLines.find((line) => {
-      lineTelefonica.telefono === line.telefono;
-    });
+    const dbLine = DBLines.find(
+      (line) =>
+        line.numero_linea === lineTelefonica.telefono ||
+        line.extension === lineTelefonica.extension
+    );
+    if (!dbLine) nuevas.push(lineTelefonica);
+    else {
+      const resultado = reviewLines(dbLine, lineTelefonica);
+      if (resultado) {
+        discrepancias.push(resultado);
+      }
+    }
   });
+  // console.log("total", nuevas.length);
+  // console.log("new lines", nuevas);
+  // console.log("total d", discrepancias.length);
+  // console.log("lines d", discrepancias);
+  return { nuevas, discrepancias };
+};
+
+const reviewLines = (dbline, telefonicaline) => {
+  if (telefonicaline.estado === "Suspendida") return null;
+  // Verificar ICC
+  if (dbline.icc !== telefonicaline.icc) {
+    return {
+      tipo: "discrepancia_icc",
+      telefonica: telefonicaline,
+      linedb: dbline,
+    };
+  }
+  // Verificar perfil
+  else if (dbline.perfil !== telefonicaline.perfil) {
+    return {
+      tipo: "discrepancia_perfil",
+      telefonica: telefonicaline,
+      linedb: dbline,
+    };
+  }
+  return null;
 };
